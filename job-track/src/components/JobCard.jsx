@@ -1,9 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 
 const statuses = ["Invited", "Rejected", "Unknown"];
 
+const statusColors = {
+  Invited: "bg-green-100 text-green-700",
+  Rejected: "bg-red-100 text-red-700",
+  Unknown: "bg-yellow-100 text-yellow-700",
+  Applied: "bg-blue-100 text-blue-700",
+};
+
 const JobCard = ({ job, deleteJob, onStatusChange, onToggleApplied }) => {
-  const handleClick = () => {
+  const [showDesc, setShowDesc] = useState(false);
+
+  const cycleStatus = () => {
     const next = (statuses.indexOf(job.status) + 1) % statuses.length;
     onStatusChange(job.id, statuses[next]);
   };
@@ -13,11 +22,20 @@ const JobCard = ({ job, deleteJob, onStatusChange, onToggleApplied }) => {
       <h3 className="text-xl font-semibold text-gray-800">{job.title}</h3>
       <p className="text-gray-600 mt-1">{job.company}</p>
 
+      {job.description && (
+        <div className="mt-2">
+          <button onClick={() => setShowDesc(!showDesc)} className="text-xs text-blue-500 underline">
+            {showDesc ? "ausblenden" : "Beschreibung anzeigen"}
+          </button>
+          {showDesc && <p className="text-sm text-gray-500 mt-1">{job.description}</p>}
+        </div>
+      )}
+
       <div className="mt-3">
         <span className="text-sm text-gray-500">Status:</span>
         <span
-          onClick={handleClick}
-          className="ml-2 px-2 py-1 text-sm rounded-lg bg-blue-100 text-blue-700 cursor-pointer"
+          onClick={cycleStatus}
+          className={`ml-2 px-2 py-1 text-sm rounded-lg cursor-pointer ${statusColors[job.status] || "bg-gray-100 text-gray-700"}`}
         >
           {job.status}
         </span>
@@ -35,10 +53,7 @@ const JobCard = ({ job, deleteJob, onStatusChange, onToggleApplied }) => {
         </button>
       </div>
 
-      <button
-        onClick={() => deleteJob(job.id)}
-        className="mt-4 px-3 py-1 bg-red-500 text-white rounded-lg"
-      >
+      <button onClick={() => deleteJob(job.id)} className="mt-4 px-3 py-1 bg-red-500 text-white rounded-lg">
         Delete
       </button>
     </div>
