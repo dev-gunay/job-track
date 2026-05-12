@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import JobCard from "../components/JobCard";
 
-// Reihenfolge: Unknown > Invited > Applied > Rejected
 const STATUS_ORDER = { Unknown: 0, Invited: 1, Applied: 2, Rejected: 3 };
 
 function Dashboard() {
-  const [jobs, setJobs] = useState([]); // kein statischer Inhalt mehr
+  const [jobs, setJobs] = useState([]);
+  const [displayedJobs, setDisplayedJobs] = useState([]);
 
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
@@ -13,34 +13,48 @@ function Dashboard() {
 
   const addJob = () => {
     if (!title || !company) return;
-    setJobs([...jobs, {
+    const newJob = {
       id: Date.now(),
       title,
       company,
       description,
       status: "Unknown",
       applied: false,
-    }]);
+    };
+    const updated = [...jobs, newJob];
+    setJobs(updated);
+    setDisplayedJobs(updated);
     setTitle("");
     setCompany("");
     setDescription("");
   };
 
-  const deleteJob = (id) => setJobs(jobs.filter((job) => job.id !== id));
+  const deleteJob = (id) => {
+    const updated = jobs.filter((job) => job.id !== id);
+    setJobs(updated);
+    setDisplayedJobs(updated);
+  };
 
   const updateStatus = (id, newStatus) => {
-    setJobs(jobs.map((job) => (job.id === id ? { ...job, status: newStatus } : job)));
+    const updated = jobs.map((job) => (job.id === id ? { ...job, status: newStatus } : job));
+    setJobs(updated);
+    setDisplayedJobs(updated); 
   };
 
   const toggleApplied = (id) => {
-    setJobs(jobs.map((job) => (job.id === id ? { ...job, applied: !job.applied } : job)));
+    const updated = jobs.map((job) => (job.id === id ? { ...job, applied: !job.applied } : job));
+    setJobs(updated);
+    setDisplayedJobs(updated); // zeigt Änderung, sortiert NICHT
   };
 
-  const sortedJobs = [...jobs].sort((a, b) => {
-    const diff = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
-    if (diff !== 0) return diff;
-    return Number(a.applied) - Number(b.applied); // nicht applied kommt zuerst
-  });
+  const handleSubmit = () => {
+    const sorted = [...jobs].sort((a, b) => {
+      const diff = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
+      if (diff !== 0) return diff;
+      return Number(a.applied) - Number(b.applied);
+    });
+    setDisplayedJobs(sorted);
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -77,12 +91,19 @@ function Dashboard() {
         </div>
       </div>
 
+      <button
+        onClick={handleSubmit}
+        className="mb-6 px-6 py-2 bg-green-500 text-white rounded-lg"
+      >
+        Apply Sort
+      </button>
+
       {jobs.length === 0 && (
         <p className="text-gray-400 text-center mt-10">Noch keine Jobs eingetragen.</p>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        {sortedJobs.map((job) => (
+        {displayedJobs.map((job) => (
           <JobCard key={job.id} job={job}
             deleteJob={deleteJob}
             onStatusChange={updateStatus}
