@@ -1,53 +1,60 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import JobCard from "../components/JobCard";
+import { getJobs, addJob, deleteJob, updateJob } from "../services/api";
 
 const STATUS_ORDER = { Unknown: 0, Invited: 1, Applied: 2, Rejected: 3 };
 
 function Dashboard() {
   const [jobs, setJobs] = useState([]);
   const [displayedJobs, setDisplayedJobs] = useState([]);
-
   const [title, setTitle] = useState("");
   const [company, setCompany] = useState("");
   const [description, setDescription] = useState("");
 
-  const addJob = () => {
+  useEffect(() => {
+    getJobs().then((data) => {
+      setJobs(data);
+      setDisplayedJobs(data);
+    });
+  }, []);
+
+  const handleAdd = async () => {
     if (!title || !company) return;
-    const newJob = {
-      id: Date.now(),
-      title,
-      company,
-      description,
-      status: "Unknown",
-      applied: false,
-    };
-    const updated = [...jobs, newJob];
-    setJobs(updated);
-    setDisplayedJobs(updated);
+    const newJob = { title, company, description, status: "Unknown", applied: false };
+    const saved = await addJob(newJob);
+    if (saved) {
+      const updated = [...jobs, saved];
+      setJobs(updated);
+      setDisplayedJobs(updated);
+    }
     setTitle("");
     setCompany("");
     setDescription("");
   };
 
-  const deleteJob = (id) => {
-    const updated = jobs.filter((job) => job.id !== id);
+  const handleDelete = async (id) => {
+    await deleteJob(id);
+    const updated = jobs.filter((j) => j.id !== id);
     setJobs(updated);
     setDisplayedJobs(updated);
   };
 
-  const updateStatus = (id, newStatus) => {
-    const updated = jobs.map((job) => (job.id === id ? { ...job, status: newStatus } : job));
+  const handleStatusChange = async (id, newStatus) => {
+    await updateJob(id, { status: newStatus });
+    const updated = jobs.map((j) => j.id === id ? { ...j, status: newStatus } : j);
     setJobs(updated);
-    setDisplayedJobs(updated); 
+    setDisplayedJobs(updated);
   };
 
-  const toggleApplied = (id) => {
-    const updated = jobs.map((job) => (job.id === id ? { ...job, applied: !job.applied } : job));
+  const handleToggleApplied = async (id) => {
+    const job = jobs.find((j) => j.id === id);
+    await updateJob(id, { applied: !job.applied });
+    const updated = jobs.map((j) => j.id === id ? { ...j, applied: !j.applied } : j);
     setJobs(updated);
-    setDisplayedJobs(updated); // zeigt Änderung, sortiert NICHT
+    setDisplayedJobs(updated);
   };
 
-  const handleSubmit = () => {
+  const handleSort = () => {
     const sorted = [...jobs].sort((a, b) => {
       const diff = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
       if (diff !== 0) return diff;
@@ -87,14 +94,11 @@ function Dashboard() {
             onChange={(e) => setCompany(e.target.value)} className="border p-2 rounded flex-1" />
           <input type="text" placeholder="Beschreibung (optional)" value={description}
             onChange={(e) => setDescription(e.target.value)} className="border p-2 rounded w-full" />
-          <button onClick={addJob} className="px-4 py-2 bg-blue-500 text-white rounded-lg">Add</button>
+          <button onClick={handleAdd} className="px-4 py-2 bg-blue-500 text-white rounded-lg">Add</button>
         </div>
       </div>
 
-      <button
-        onClick={handleSubmit}
-        className="mb-6 px-6 py-2 bg-green-500 text-white rounded-lg"
-      >
+      <button onClick={handleSort} className="mb-6 px-6 py-2 bg-green-500 text-white rounded-lg">
         Apply Sort
       </button>
 
@@ -105,9 +109,9 @@ function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2">
         {displayedJobs.map((job) => (
           <JobCard key={job.id} job={job}
-            deleteJob={deleteJob}
-            onStatusChange={updateStatus}
-            onToggleApplied={toggleApplied}
+            deleteJob={handleDelete}
+            onStatusChange={handleStatusChange}
+            onToggleApplied={handleToggleApplied}
           />
         ))}
       </div>
